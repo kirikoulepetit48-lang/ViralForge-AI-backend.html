@@ -1,38 +1,33 @@
-const express = require("express");
-const cors = require("cors");
-const Groq = require("groq-sdk");
-
+const express = require('express');
+const cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req,res)=> res.json({success:true, message:"ViralForge AI OK 🚀"}));
+app.get('/', (req,res)=> res.json({ok:true}));
 
-app.post("/generate", async (req,res)=>{
+app.post('/generate', async (req,res)=>{
   try{
-    const { topic, contentType, style } = req.body;
-    if(!topic) return res.status(400).json({success:false, message:"Topic obligatoire"});
-    if(!process.env.GROQ_API_KEY) return res.status(500).json({success:false, message:"GROQ_API_KEY manquante dans Render"});
+    const key = process.env.GROQ_API_KEY;
+    console.log("Clé présente?",!!key, "Topic:", req.body.topic);
+    if(!key) return res.json({error:"GROQ_API_KEY manquante sur Render!"});
 
-    const groq = new Groq({apiKey: process.env.GROQ_API_KEY});
-
-    const completion = await groq.chat.completions.create({
-      model:"llama-3.3-70b-versatile",
-      messages:[
-        {role:"system", content:"Tu es expert contenu TikTok viral. Réponds JSON valide."},
-        {role:"user", content:`SUJET: ${topic} TYPE: ${contentType} STYLE: ${style} Réponds JSON: {"hook":"","script":"","scenes":"","cta":"","hashtags":""}` }
-      ],
-      temperature:0.8,
-      response_format:{type:"json_object"}
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+      body: JSON.stringify({
+        model:"llama-3.1-8b-instant",
+        messages:[{role:"user", content:`Script TikTok viral 30s sur ${req.body.topic}, style ${req.body.style}. Hook choc + 3 secrets + CTA. Français punchy.`}],
+        max_tokens:500
+      })
     });
-
-    const data = JSON.parse(completion.choices[0].message.content);
-    res.json({success:true, data});
+    const d = await r.json();
+    console.log("GROQ:", JSON.stringify(d).substring(0,400));
+    if(d.error) return res.json({error:"Groq dit: "+d.error.message});
+    res.json({script: d.choices[0].message.content});
   }catch(e){
-    console.error(e);
-    res.status(500).json({success:false, message:e.message});
+    console.log("ERREUR SERVEUR:", e);
+    res.json({error:e.message});
   }
 });
-
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', ()=> console.log("Lancé sur "+PORT));
+app.listen(process.env.PORT||10000, ()=>console.log("Lancé sur 10000"));

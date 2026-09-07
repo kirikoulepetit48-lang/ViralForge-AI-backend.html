@@ -16,7 +16,7 @@ app.post('/generate', async (req,res)=>{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
       body: JSON.stringify({
-        model:"llama-3.1-8b-instant",
+        model:"llama-3.3-70b-versatile",
         messages:[{role:"user", content:`Script TikTok viral 30s sur ${req.body.topic}, style ${req.body.style}. Hook choc + 3 secrets + CTA. Français punchy.`}],
         max_tokens:500
       })
